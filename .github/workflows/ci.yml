@@ -6,16 +6,16 @@ on:
 jobs:
   build:
     name: Build
-    uses: spacelift-io/flows-community-registry/.github/workflows/build-app-version.yml@main
+    uses: spacelift-flows-apps/flows-community-registry/.github/workflows/build-app-version.yml@main
 
   upload:
     name: Upload artifact
     needs: build
     secrets: inherit
-    uses: spacelift-io/flows-core-registry/.github/workflows/upload-app-version.yml@main
+    uses: spacelift-flows-apps/flows-core-registry/.github/workflows/upload-app-version.yml@main
 
   index:
     name: Index app versions
     needs: upload
     secrets: inherit
-    uses: spacelift-io/flows-core-registry/.github/workflows/index-app-versions.yml@main
+    uses: spacelift-flows-apps/flows-core-registry/.github/workflows/index-app-versions.yml@main
