@@ -1,4 +1,5 @@
-import { AppBlock, events } from "@slflows/sdk/v1";
+import { AppBlock, events, kv } from "@slflows/sdk/v1";
+import { extractFieldValue } from "./helpers";
 
 export const issueCreated: AppBlock = {
   name: "Issue Created",
@@ -11,6 +12,25 @@ export const issueCreated: AppBlock = {
     const { issue, user } = input.message.body;
 
     try {
+      // Get field mapping from cache for custom field name resolution
+      const fieldMappingResult = await kv.app.get("jira_field_mapping");
+      const fieldMapping: Record<string, string> =
+        fieldMappingResult?.value || {};
+
+      // Extract custom fields with their display names and simplified values
+      const customFields: Record<string, any> = {};
+      for (const [key, value] of Object.entries(issue.fields || {})) {
+        if (key.startsWith("customfield_") && value !== null) {
+          const fieldName = fieldMapping[key];
+          if (!fieldName) {
+            console.warn(
+              `Unknown custom field "${key}" - consider re-syncing the Jira app to refresh field mappings`,
+            );
+          }
+          customFields[fieldName || key] = extractFieldValue(value);
+        }
+      }
+
       // Extract key information from the issue
       const issueData = {
         id: issue.id,
@@ -21,7 +41,9 @@ export const issueCreated: AppBlock = {
         priority: issue.fields?.priority?.name,
         issueType: issue.fields?.issuetype?.name,
         project: issue.fields?.project?.key,
+        labels: issue.fields?.labels || [],
         created: issue.fields?.created,
+        customFields,
       };
 
       // Extract user information
@@ -74,9 +96,20 @@ export const issueCreated: AppBlock = {
               priority: { type: "string", description: "Priority level" },
               issueType: { type: "string", description: "Issue type" },
               project: { type: "string", description: "Project key" },
+              labels: {
+                type: "array",
+                description: "Issue labels",
+                items: { type: "string" },
+              },
               created: { type: "string", description: "Creation timestamp" },
+              customFields: {
+                type: "object",
+                description:
+                  "Custom fields with their display names as keys. Values vary by field type.",
+                additionalProperties: true,
+              },
             },
-            required: ["id", "key"],
+            required: ["id", "key", "customFields"],
           },
           createdBy: {
             type: "object",

@@ -3,9 +3,33 @@ import {
   http,
   messaging,
   blocks as blocksApi,
+  kv,
+  lifecycle,
 } from "@slflows/sdk/v1";
 import { blocks } from "./blocks/index";
 import { createJiraClient } from "./utils/jiraClient";
+
+const FIELD_MAPPING_KEY = "jira_field_mapping";
+
+async function fetchAndCacheFieldMapping(config: {
+  jiraUrl: string;
+  email: string;
+  apiToken: string;
+}) {
+  const jiraClient = createJiraClient(config);
+  const fields =
+    await jiraClient.get<Array<{ id: string; name: string; custom: boolean }>>(
+      "/field",
+    );
+
+  const fieldMapping: Record<string, string> = {};
+  for (const field of fields) {
+    fieldMapping[field.id] = field.name;
+  }
+
+  await kv.app.set({ key: FIELD_MAPPING_KEY, value: fieldMapping });
+  console.log(`Cached ${Object.keys(fieldMapping).length} Jira field mappings`);
+}
 
 export const app = defineApp({
   name: "Jira Integration",
@@ -74,6 +98,9 @@ export const app = defineApp({
         emailAddress: string;
       }>("/myself");
 
+      // Fetch and cache field mapping for custom field name resolution
+      await fetchAndCacheFieldMapping({ jiraUrl, email, apiToken });
+
       return {
         newStatus: "ready",
         signalUpdates: {
@@ -92,6 +119,22 @@ export const app = defineApp({
         customStatusDescription: "Authentication error, see logs",
       };
     }
+  },
+
+  schedules: {
+    refreshFieldMapping: {
+      description: "Refresh Jira field mapping hourly",
+      definition: {
+        type: "frequency",
+        frequency: {
+          interval: 1,
+          unit: "hours",
+        },
+      },
+      async onTrigger() {
+        await lifecycle.sync();
+      },
+    },
   },
 
   http: {
