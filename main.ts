@@ -11,20 +11,32 @@ import { createJiraClient } from "./utils/jiraClient";
 
 const FIELD_MAPPING_KEY = "jira_field_mapping";
 
+export interface FieldMetadata {
+  name: string;
+  type: string | null;
+}
+
 async function fetchAndCacheFieldMapping(config: {
   jiraUrl: string;
   email: string;
   apiToken: string;
 }) {
   const jiraClient = createJiraClient(config);
-  const fields =
-    await jiraClient.get<Array<{ id: string; name: string; custom: boolean }>>(
-      "/field",
-    );
+  const fields = await jiraClient.get<
+    Array<{
+      id: string;
+      name: string;
+      custom: boolean;
+      schema?: { type: string };
+    }>
+  >("/field");
 
-  const fieldMapping: Record<string, string> = {};
+  const fieldMapping: Record<string, FieldMetadata> = {};
   for (const field of fields) {
-    fieldMapping[field.id] = field.name;
+    fieldMapping[field.id] = {
+      name: field.name,
+      type: field.schema?.type ?? null,
+    };
   }
 
   await kv.app.set({ key: FIELD_MAPPING_KEY, value: fieldMapping });
