@@ -1,4 +1,5 @@
 import { AppBlock, events, kv } from "@slflows/sdk/v1";
+import type { FieldMetadata } from "../../main";
 import { extractFieldValue } from "./helpers";
 
 export const issueUpdated: AppBlock = {
@@ -14,20 +15,23 @@ export const issueUpdated: AppBlock = {
     try {
       // Get field mapping from cache for custom field name resolution
       const fieldMappingResult = await kv.app.get("jira_field_mapping");
-      const fieldMapping: Record<string, string> =
+      const fieldMapping: Record<string, FieldMetadata> =
         fieldMappingResult?.value || {};
 
       // Extract custom fields with their display names and simplified values
       const customFields: Record<string, any> = {};
       for (const [key, value] of Object.entries(issue.fields || {})) {
         if (key.startsWith("customfield_") && value !== null) {
-          const fieldName = fieldMapping[key];
-          if (!fieldName) {
+          const metadata = fieldMapping[key];
+          if (!metadata) {
             console.warn(
               `Unknown custom field "${key}" - consider re-syncing the Jira app to refresh field mappings`,
             );
           }
-          customFields[fieldName || key] = extractFieldValue(value);
+          customFields[metadata?.name || key] = extractFieldValue(
+            value,
+            metadata,
+          );
         }
       }
 
