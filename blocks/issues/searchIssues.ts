@@ -1,5 +1,7 @@
-import { AppBlock, events } from "@slflows/sdk/v1";
+import { AppBlock, events, kv } from "@slflows/sdk/v1";
+import type { FieldMetadata } from "../../main";
 import { createJiraClient } from "../../utils/jiraClient";
+import { extractFieldValue } from "../webhooks/helpers";
 
 export const searchIssues: AppBlock = {
   name: "Search Issues",
@@ -89,6 +91,31 @@ export const searchIssues: AppBlock = {
             warningMessages?: string[];
           }>("/search", searchRequest);
 
+          // Get field mapping from cache for custom field name resolution
+          const fieldMappingResult = await kv.app.get("jira_field_mapping");
+          const fieldMapping: Record<string, FieldMetadata> =
+            fieldMappingResult?.value || {};
+
+          // Helper to extract custom fields from an issue
+          const extractCustomFields = (fields: any) => {
+            const customFields: Record<string, any> = {};
+            for (const [key, value] of Object.entries(fields || {})) {
+              if (key.startsWith("customfield_") && value !== null) {
+                const metadata = fieldMapping[key];
+                if (!metadata) {
+                  console.warn(
+                    `Unknown custom field "${key}" - consider re-syncing the Jira app to refresh field mappings`,
+                  );
+                }
+                customFields[metadata?.name || key] = extractFieldValue(
+                  value,
+                  metadata,
+                );
+              }
+            }
+            return customFields;
+          };
+
           await events.emit({
             total: searchResults.total,
             startAt: searchResults.startAt,
@@ -98,6 +125,7 @@ export const searchIssues: AppBlock = {
               key: issue.key,
               issueUrl: issue.self,
               fields: issue.fields,
+              customFields: extractCustomFields(issue.fields),
               expand: issue.expand,
               names: issue.names,
               renderedFields: issue.renderedFields,
@@ -151,6 +179,12 @@ export const searchIssues: AppBlock = {
                   description: "The API URL for this issue",
                 },
                 fields: { type: "object", description: "The issue fields" },
+                customFields: {
+                  type: "object",
+                  description:
+                    "Custom fields with their display names as keys. Values vary by field type.",
+                  additionalProperties: true,
+                },
                 expand: {
                   type: "string",
                   description: "The expand parameter used",
@@ -168,7 +202,7 @@ export const searchIssues: AppBlock = {
                   description: "Issue change history (when expanded)",
                 },
               },
-              required: ["id", "key", "issueUrl", "fields"],
+              required: ["id", "key", "issueUrl", "fields", "customFields"],
             },
           },
           warningMessages: {

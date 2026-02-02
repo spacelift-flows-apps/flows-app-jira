@@ -9,6 +9,7 @@ This repository is an app repo based on our Flows App Template. It can be used a
 When working on the app, **always** make sure to read the appRuntime.ts from https://docs.useflows.com/appRuntime.ts . This is later injected by the Flows runtime, you should never include it yourself. It's presented there as a reference.
 
 If necessary, you may also consider reading the documentation about building Flows apps at https://docs.useflows.com/developers/building-apps/ , specifically:
+
 - Configuration: https://docs.useflows.com/developers/building-apps/configuration/
 - Events: https://docs.useflows.com/developers/building-apps/events/
 - Lifecycle: https://docs.useflows.com/developers/building-apps/lifecycle/
@@ -215,6 +216,7 @@ This template provides a solid foundation for building production-ready Flows ap
 The app can be submitted to Flows as a custom app, or added to a registry.
 
 The user can use [flowctl](https://github.com/spacelift-io/flowctl) to create a custom app in their Flows organization, and then a version of the app inside of that. They will more or less have to run:
+
 ```
 flowctl auth login # Follow the prompts to authenticate
 flowctl app create # Follow the prompts to create the app
@@ -222,5 +224,6 @@ flowctl version update --entrypoint main.ts --watch # Follow the prompts to crea
 ```
 
 More details can be found here:
+
 - https://docs.useflows.com/developers/deploying-apps/custom-apps/
 - https://docs.useflows.com/developers/deploying-apps/app-registries/
