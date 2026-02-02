@@ -24,6 +24,17 @@ import { issueUpdated } from "./webhooks/issueUpdated";
 import { commentCreated } from "./webhooks/commentCreated";
 import { versionReleased } from "./webhooks/versionReleased";
 
+// Service Desk blocks
+import { listServiceDesks } from "./service-desk/listServiceDesks";
+import { listRequestTypes } from "./service-desk/listRequestTypes";
+import { createServiceDeskRequest } from "./service-desk/createServiceDeskRequest";
+import { getSlaInformation } from "./service-desk/getSlaInformation";
+import { addRequestParticipants } from "./service-desk/addRequestParticipants";
+import { addInternalNote } from "./service-desk/addInternalNote";
+import { addCustomerResponse } from "./service-desk/addCustomerResponse";
+import { getApprovals } from "./service-desk/getApprovals";
+import { respondToApproval } from "./service-desk/respondToApproval";
+
 /**
  * Dictionary of all available blocks organized by category
  * Key: block identifier (for programmatic access)
@@ -55,6 +66,17 @@ export const blocks = {
   issueUpdated,
   commentCreated,
   versionReleased,
+
+  // Service Desk Management
+  listServiceDesks,
+  listRequestTypes,
+  createServiceDeskRequest,
+  getSlaInformation,
+  addRequestParticipants,
+  addInternalNote,
+  addCustomerResponse,
+  getApprovals,
+  respondToApproval,
 } as const;
 
 // Named exports for individual blocks (optional, for external imports)
@@ -77,4 +99,13 @@ export {
   issueUpdated,
   commentCreated,
   versionReleased,
+  listServiceDesks,
+  listRequestTypes,
+  createServiceDeskRequest,
+  getSlaInformation,
+  addRequestParticipants,
+  addInternalNote,
+  addCustomerResponse,
+  getApprovals,
+  respondToApproval,
 };
