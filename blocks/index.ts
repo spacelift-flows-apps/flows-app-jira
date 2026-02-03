@@ -25,8 +25,6 @@ import { commentCreated } from "./webhooks/commentCreated";
 import { versionReleased } from "./webhooks/versionReleased";
 
 // Service Desk blocks
-import { listServiceDesks } from "./service-desk/listServiceDesks";
-import { listRequestTypes } from "./service-desk/listRequestTypes";
 import { createServiceDeskRequest } from "./service-desk/createServiceDeskRequest";
 import { getSlaInformation } from "./service-desk/getSlaInformation";
 import { addRequestParticipants } from "./service-desk/addRequestParticipants";
@@ -68,8 +66,6 @@ export const blocks = {
   versionReleased,
 
   // Service Desk Management
-  listServiceDesks,
-  listRequestTypes,
   createServiceDeskRequest,
   getSlaInformation,
   addRequestParticipants,
