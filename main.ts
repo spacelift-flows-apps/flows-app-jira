@@ -20,7 +20,7 @@ async function fetchAndCacheFieldMapping(config: {
   jiraUrl: string;
   email: string;
   apiToken: string;
-}) {
+}): Promise<Record<string, FieldMetadata>> {
   const jiraClient = createJiraClient(config);
   const fields = await jiraClient.get<
     Array<{
@@ -41,6 +41,8 @@ async function fetchAndCacheFieldMapping(config: {
 
   await kv.app.set({ key: FIELD_MAPPING_KEY, value: fieldMapping });
   console.log(`Cached ${Object.keys(fieldMapping).length} Jira field mappings`);
+
+  return fieldMapping;
 }
 
 export const app = defineApp({
@@ -95,6 +97,11 @@ export const app = defineApp({
       name: "User Email",
       description: "Email address of the authenticated user",
     },
+    customFieldsMapping: {
+      name: "Custom Fields Mapping",
+      description:
+        "Mapping of Jira custom field IDs to their display names and types (e.g., customfield_10001 -> Sprint)",
+    },
   },
 
   async onSync(input) {
@@ -111,7 +118,19 @@ export const app = defineApp({
       }>("/myself");
 
       // Fetch and cache field mapping for custom field name resolution
-      await fetchAndCacheFieldMapping({ jiraUrl, email, apiToken });
+      const fieldMapping = await fetchAndCacheFieldMapping({
+        jiraUrl,
+        email,
+        apiToken,
+      });
+
+      // Format custom fields mapping for display (only custom fields)
+      const customFieldsOnly: Record<string, FieldMetadata> = {};
+      for (const [id, metadata] of Object.entries(fieldMapping)) {
+        if (id.startsWith("customfield_")) {
+          customFieldsOnly[id] = metadata;
+        }
+      }
 
       return {
         newStatus: "ready",
@@ -119,6 +138,7 @@ export const app = defineApp({
           userAccountId: userInfo.accountId,
           userDisplayName: userInfo.displayName,
           userEmailAddress: userInfo.emailAddress,
+          customFieldsMapping: customFieldsOnly,
         },
       };
     } catch (error) {

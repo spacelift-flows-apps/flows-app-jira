@@ -67,7 +67,8 @@ export const searchIssues: AppBlock = {
           };
 
           // The new API requires explicit field selection; default to all fields
-          searchRequest.fields = fields && fields.length > 0 ? fields : ["*all"];
+          searchRequest.fields =
+            fields && fields.length > 0 ? fields : ["*all"];
 
           // The new API expects expand as a comma-separated string
           if (expand && expand.length > 0) {
