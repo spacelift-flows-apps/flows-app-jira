@@ -85,7 +85,6 @@ export const getApprovals: AppBlock = {
             (a) => a.finalDecision === "declined",
           ).length,
           approvals,
-          pendingApprovals,
         });
       },
     },
@@ -144,17 +143,23 @@ export const getApprovals: AppBlock = {
                 approvers: {
                   type: "array",
                   description: "List of approvers with their decisions",
+                  items: {
+                    type: "object",
+                    properties: {
+                      accountId: { type: "string" },
+                      displayName: { type: "string" },
+                      emailAddress: { type: "string" },
+                      decision: { type: "string" },
+                    },
+                    required: ["accountId", "displayName", "decision"],
+                  },
                 },
               },
+              required: ["id", "name", "finalDecision", "canAnswerApproval", "approvers"],
             },
           },
-          pendingApprovals: {
-            type: "array",
-            description: "Only pending approvals (convenience filter)",
-            items: { type: "object" },
-          },
         },
-        required: ["issueIdOrKey", "totalCount", "approvals"],
+        required: ["issueIdOrKey", "totalCount", "pendingCount", "approvedCount", "declinedCount", "approvals", "pendingApprovals"],
       },
     },
   },

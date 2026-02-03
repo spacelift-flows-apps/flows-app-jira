@@ -79,6 +79,7 @@ export const addRequestParticipants: AppBlock = {
                 displayName: { type: "string" },
                 emailAddress: { type: "string" },
               },
+              required: ["accountId", "displayName"],
             },
           },
         },

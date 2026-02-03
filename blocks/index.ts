@@ -95,8 +95,6 @@ export {
   issueUpdated,
   commentCreated,
   versionReleased,
-  listServiceDesks,
-  listRequestTypes,
   createServiceDeskRequest,
   getSlaInformation,
   addRequestParticipants,

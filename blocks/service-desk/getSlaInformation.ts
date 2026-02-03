@@ -97,7 +97,6 @@ export const getSlaInformation: AppBlock = {
           issueIdOrKey,
           totalSlaCount: slaMetrics.length,
           breachedCount: breachedSlas.length,
-          breachedSlas,
           activeSlaCount: activeSlas.length,
           slaMetrics,
         });
@@ -122,11 +121,6 @@ export const getSlaInformation: AppBlock = {
           breachedCount: {
             type: "number",
             description: "Number of breached SLAs",
-          },
-          breachedSlas: {
-            type: "array",
-            description: "Names of breached SLAs",
-            items: { type: "string" },
           },
           activeSlaCount: {
             type: "number",
@@ -164,10 +158,11 @@ export const getSlaInformation: AppBlock = {
                   description: "Historical completed cycles",
                 },
               },
+              required: ["name", "breached", "paused", "hasOngoingCycle", "completedCyclesCount", "completedCycles"],
             },
           },
         },
-        required: ["issueIdOrKey", "totalSlaCount", "slaMetrics"],
+        required: ["issueIdOrKey", "totalSlaCount", "breachedCount", "breachedSlas", "activeSlaCount", "slaMetrics"],
       },
     },
   },
