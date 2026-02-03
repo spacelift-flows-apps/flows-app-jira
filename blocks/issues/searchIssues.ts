@@ -21,7 +21,7 @@ export const searchIssues: AppBlock = {
         fields: {
           name: "Fields to Include",
           description:
-            "Array of fields to include in results (e.g., ['summary', 'status', 'assignee']). If empty, returns default fields.",
+            "Array of fields to include in results (e.g., ['summary', 'status', 'assignee']). If empty, returns all fields.",
           type: ["string"],
           required: false,
         },
@@ -32,10 +32,11 @@ export const searchIssues: AppBlock = {
           type: ["string"],
           required: false,
         },
-        startAt: {
-          name: "Start At",
-          description: "Starting index for pagination (default: 0)",
-          type: "number",
+        nextPageToken: {
+          name: "Next Page Token",
+          description:
+            "Token for pagination. Use the nextPageToken from a previous response to get the next page of results.",
+          type: "string",
           required: false,
         },
         maxResults: {
@@ -52,31 +53,33 @@ export const searchIssues: AppBlock = {
           jql,
           fields,
           expand,
-          startAt = 0,
+          nextPageToken,
           maxResults = 50,
         } = input.event.inputConfig;
 
         const jiraClient = createJiraClient({ jiraUrl, email, apiToken });
 
         try {
-          // Build search request body
+          // Build search request body for the new /search/jql API
           const searchRequest: any = {
             jql,
-            startAt,
             maxResults: Math.min(maxResults, 100), // Cap at 100 to prevent excessive results
           };
 
-          if (fields && fields.length > 0) {
-            searchRequest.fields = fields;
+          // The new API requires explicit field selection; default to all fields
+          searchRequest.fields = fields && fields.length > 0 ? fields : ["*all"];
+
+          // The new API expects expand as a comma-separated string
+          if (expand && expand.length > 0) {
+            searchRequest.expand = expand.join(",");
           }
 
-          if (expand && expand.length > 0) {
-            searchRequest.expand = expand;
+          // Use token-based pagination
+          if (nextPageToken) {
+            searchRequest.nextPageToken = nextPageToken;
           }
 
           const searchResults = await jiraClient.post<{
-            startAt: number;
-            maxResults: number;
             total: number;
             issues: Array<{
               id: string;
@@ -88,8 +91,9 @@ export const searchIssues: AppBlock = {
               renderedFields?: Record<string, any>;
               changelog?: any;
             }>;
+            nextPageToken?: string;
             warningMessages?: string[];
-          }>("/search", searchRequest);
+          }>("/search/jql", searchRequest);
 
           // Get field mapping from cache for custom field name resolution
           const fieldMappingResult = await kv.app.get("jira_field_mapping");
@@ -118,8 +122,7 @@ export const searchIssues: AppBlock = {
 
           await events.emit({
             total: searchResults.total,
-            startAt: searchResults.startAt,
-            maxResults: searchResults.maxResults,
+            nextPageToken: searchResults.nextPageToken,
             issues: searchResults.issues.map((issue) => ({
               id: issue.id,
               key: issue.key,
@@ -155,13 +158,10 @@ export const searchIssues: AppBlock = {
             type: "number",
             description: "Total number of issues matching the query",
           },
-          startAt: {
-            type: "number",
-            description: "Starting index of this page",
-          },
-          maxResults: {
-            type: "number",
-            description: "Maximum results requested per page",
+          nextPageToken: {
+            type: "string",
+            description:
+              "Token to fetch the next page of results. Pass this to the nextPageToken input to get more results. Undefined if there are no more results.",
           },
           issues: {
             type: "array",
@@ -211,13 +211,7 @@ export const searchIssues: AppBlock = {
             items: { type: "string" },
           },
         },
-        required: [
-          "total",
-          "startAt",
-          "maxResults",
-          "issues",
-          "warningMessages",
-        ],
+        required: ["total", "issues", "warningMessages"],
       },
     },
   },
