@@ -1,5 +1,7 @@
-import { AppBlock, events } from "@slflows/sdk/v1";
+import { AppBlock, events, kv } from "@slflows/sdk/v1";
+import type { FieldMetadata } from "../../main";
 import { createJiraClient } from "../../utils/jiraClient";
+import { extractFieldValue } from "../webhooks/helpers";
 
 export const getIssue: AppBlock = {
   name: "Get Issue",
@@ -65,11 +67,34 @@ export const getIssue: AppBlock = {
             editmeta?: any;
           }>(endpoint);
 
+          // Get field mapping from cache for custom field name resolution
+          const fieldMappingResult = await kv.app.get("jira_field_mapping");
+          const fieldMapping: Record<string, FieldMetadata> =
+            fieldMappingResult?.value || {};
+
+          // Extract custom fields with their display names and simplified values
+          const customFields: Record<string, any> = {};
+          for (const [key, value] of Object.entries(issue.fields || {})) {
+            if (key.startsWith("customfield_") && value !== null) {
+              const metadata = fieldMapping[key];
+              if (!metadata) {
+                console.warn(
+                  `Unknown custom field "${key}" - consider re-syncing the Jira app to refresh field mappings`,
+                );
+              }
+              customFields[metadata?.name || key] = extractFieldValue(
+                value,
+                metadata,
+              );
+            }
+          }
+
           await events.emit({
             id: issue.id,
             key: issue.key,
             issueUrl: issue.self,
             fields: issue.fields,
+            customFields,
             expand: issue.expand,
             names: issue.names,
             renderedFields: issue.renderedFields,
@@ -111,6 +136,12 @@ export const getIssue: AppBlock = {
             description:
               "The issue fields (structure depends on 'fields' parameter)",
           },
+          customFields: {
+            type: "object",
+            description:
+              "Custom fields with their display names as keys. Values vary by field type.",
+            additionalProperties: true,
+          },
           expand: {
             type: "string",
             description: "The expand parameter used in the request",
@@ -142,7 +173,7 @@ export const getIssue: AppBlock = {
             description: "Edit metadata (when expand=editmeta)",
           },
         },
-        required: ["id", "key", "issueUrl", "fields"],
+        required: ["id", "key", "issueUrl", "fields", "customFields"],
       },
     },
   },

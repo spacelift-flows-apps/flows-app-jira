@@ -1,10 +1,26 @@
-# {{APP_NAME}} - Flows App
+# Flows Overview
 
-For general app development guidance, see @../CLAUDE.md
+Flows is a workflow automation tool targeted at DevOps engineers. You have blocks on a canvas connected by lines. Those blocks may have multiple inputs and outputs on which they send and receive events. We call these blocks "entities" as they can be very powerful. New entities can be implemented by means of apps which are implemented in JavaScript. Those entities can have http endpoints, manage infrastructure resources, have a lifecycle, and more. Entities live in flows.
+
+All configuration expressions and the code of apps are executed on agents, which are connected to the gateway via websockets. Those agents are responsible for managing Node.js runtimes for apps and for flows.
+
+This repository is an app repo based on our Flows App Template. It can be used as a starting point for building new Flows apps.
+
+When working on the app, **always** make sure to read the appRuntime.ts from https://docs.useflows.com/appRuntime.ts . This is later injected by the Flows runtime, you should never include it yourself. It's presented there as a reference.
+
+If necessary, you may also consider reading the documentation about building Flows apps at https://docs.useflows.com/developers/building-apps/ , specifically:
+
+- Configuration: https://docs.useflows.com/developers/building-apps/configuration/
+- Events: https://docs.useflows.com/developers/building-apps/events/
+- Lifecycle: https://docs.useflows.com/developers/building-apps/lifecycle/
+- KV Storage: https://docs.useflows.com/developers/building-apps/kv-storage/
+- HTTP Handlers: https://docs.useflows.com/developers/building-apps/http/
+- Scheduling: https://docs.useflows.com/developers/building-apps/scheduling/
+- Messaging: https://docs.useflows.com/developers/building-apps/messaging/
+
+If necessary, you can also find other apps in public repos of the https://github.com/spacelift-flows-apps organization.
 
 ## Overview
-
-{{APP_DESCRIPTION}}
 
 This app demonstrates the standard patterns for Flows apps:
 
@@ -146,7 +162,7 @@ The template includes a complete CI/CD system:
 
 ### Security
 
-- Use `secret: true` for sensitive configuration
+- Use `sensitive: true` for sensitive configuration
 - Never log sensitive data
 - Validate all inputs
 
@@ -185,6 +201,7 @@ export const blocks = {
 
 1. Update config schema in `main.ts`
 2. Access via `input.app.config.fieldName`
+3. For both app and block configs, make sure to use `default:` fields with `required: false`, when applicable, rather than using an optional field and conditionally providing a default value in app handlers.
 
 ### Adding Dependencies
 
@@ -193,3 +210,20 @@ export const blocks = {
 3. Ensure TypeScript types are available
 
 This template provides a solid foundation for building production-ready Flows apps with modern development practices and automated deployment.
+
+## Testing the App
+
+The app can be submitted to Flows as a custom app, or added to a registry.
+
+The user can use [flowctl](https://github.com/spacelift-io/flowctl) to create a custom app in their Flows organization, and then a version of the app inside of that. They will more or less have to run:
+
+```
+flowctl auth login # Follow the prompts to authenticate
+flowctl app create # Follow the prompts to create the app
+flowctl version update --entrypoint main.ts --watch # Follow the prompts to create a version in watch mode - this will update the app live as you make changes. Can skip --watch to just do a one-time upload.
+```
+
+More details can be found here:
+
+- https://docs.useflows.com/developers/deploying-apps/custom-apps/
+- https://docs.useflows.com/developers/deploying-apps/app-registries/
