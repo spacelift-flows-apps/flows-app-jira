@@ -7,6 +7,30 @@ export const issueCreated: AppBlock = {
   description: "Triggered when a new Jira issue is created via webhook",
   category: "Webhooks",
 
+  config: {
+    projectKeys: {
+      name: "Project Keys",
+      description:
+        "Filter by project keys (optional). Leave empty to receive all projects.",
+      type: ["string"],
+      required: false,
+    },
+    issueTypes: {
+      name: "Issue Types",
+      description:
+        "Filter by issue types (optional). Leave empty to receive all issue types.",
+      type: ["string"],
+      required: false,
+    },
+    priorities: {
+      name: "Priorities",
+      description:
+        "Filter by priorities (optional). Leave empty to receive all priorities.",
+      type: ["string"],
+      required: false,
+    },
+  },
+
   inputs: {},
 
   onInternalMessage: async (input) => {

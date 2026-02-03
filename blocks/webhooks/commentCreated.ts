@@ -6,6 +6,16 @@ export const commentCreated: AppBlock = {
     "Triggered when a new comment is added to a Jira issue via webhook",
   category: "Webhooks",
 
+  config: {
+    projectKeys: {
+      name: "Project Keys",
+      description:
+        "Filter by project keys (optional). Leave empty to receive all projects.",
+      type: ["string"],
+      required: false,
+    },
+  },
+
   inputs: {},
 
   onInternalMessage: async (input) => {
