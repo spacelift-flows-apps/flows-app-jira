@@ -159,7 +159,7 @@ export const getApprovals: AppBlock = {
             },
           },
         },
-        required: ["issueIdOrKey", "totalCount", "pendingCount", "approvedCount", "declinedCount", "approvals", "pendingApprovals"],
+        required: ["issueIdOrKey", "totalCount", "pendingCount", "approvedCount", "declinedCount", "approvals"],
       },
     },
   },

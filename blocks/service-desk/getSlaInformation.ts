@@ -162,7 +162,7 @@ export const getSlaInformation: AppBlock = {
             },
           },
         },
-        required: ["issueIdOrKey", "totalSlaCount", "breachedCount", "breachedSlas", "activeSlaCount", "slaMetrics"],
+        required: ["issueIdOrKey", "totalSlaCount", "breachedCount", "activeSlaCount", "slaMetrics"],
       },
     },
   },
