@@ -1,5 +1,82 @@
 import { AppBlock, events } from "@slflows/sdk/v1";
+import memoizee from "memoizee";
 import { createServiceDeskClient } from "../../utils/serviceDeskClient";
+
+interface PagedResponse<T> {
+  values: T[];
+  size: number;
+  start: number;
+  limit: number;
+  isLastPage: boolean;
+}
+
+interface ServiceDesk {
+  id: string;
+  projectId: string;
+  projectName: string;
+  projectKey: string;
+}
+
+interface RequestType {
+  id: string;
+  name: string;
+  description: string;
+}
+
+async function fetchAllServiceDesks(
+  jiraUrl: string,
+  email: string,
+  apiToken: string,
+): Promise<ServiceDesk[]> {
+  const client = createServiceDeskClient({ jiraUrl, email, apiToken });
+  const allDesks: ServiceDesk[] = [];
+  let start = 0;
+  const limit = 50;
+
+  while (true) {
+    const response = await client.get<PagedResponse<ServiceDesk>>(
+      `/servicedesk?start=${start}&limit=${limit}`,
+    );
+    allDesks.push(...response.values);
+    if (response.isLastPage) break;
+    start += response.values.length;
+  }
+
+  return allDesks;
+}
+
+async function fetchAllRequestTypes(
+  jiraUrl: string,
+  email: string,
+  apiToken: string,
+  serviceDeskId: string,
+): Promise<RequestType[]> {
+  const client = createServiceDeskClient({ jiraUrl, email, apiToken });
+  const allTypes: RequestType[] = [];
+  let start = 0;
+  const limit = 50;
+
+  while (true) {
+    const response = await client.get<PagedResponse<RequestType>>(
+      `/servicedesk/${serviceDeskId}/requesttype?start=${start}&limit=${limit}`,
+    );
+    allTypes.push(...response.values);
+    if (response.isLastPage) break;
+    start += response.values.length;
+  }
+
+  return allTypes;
+}
+
+const getAllServiceDesks = memoizee(fetchAllServiceDesks, {
+  maxAge: 60000,
+  promise: true,
+});
+
+const getAllRequestTypes = memoizee(fetchAllRequestTypes, {
+  maxAge: 60000,
+  promise: true,
+});
 
 export const createServiceDeskRequest: AppBlock = {
   name: "Create Service Desk Request",
@@ -7,22 +84,74 @@ export const createServiceDeskRequest: AppBlock = {
     "Create a new request via Jira Service Management (uses Service Desk API instead of standard issue API)",
   category: "Service Desk",
 
+  config: {
+    serviceDeskId: {
+      name: "Service Desk",
+      description: "The service desk where the request will be created",
+      type: "string",
+      required: true,
+      suggestValues: async (input) => {
+        const { jiraUrl, email, apiToken } = input.app.config;
+        const allDesks = await getAllServiceDesks(jiraUrl, email, apiToken);
+
+        let values = allDesks.map((desk) => ({
+          label: `${desk.projectName} (${desk.projectKey})`,
+          value: desk.id,
+        }));
+
+        if (input.searchPhrase) {
+          const searchLower = input.searchPhrase.toLowerCase();
+          values = values.filter((v) =>
+            v.label.toLowerCase().includes(searchLower),
+          );
+        }
+
+        return { suggestedValues: values.slice(0, 50) };
+      },
+    },
+  },
+
   inputs: {
     default: {
       config: {
-        serviceDeskId: {
-          name: "Service Desk ID",
-          description:
-            "The ID of the service desk where the request will be created",
-          type: "string",
-          required: true,
-        },
         requestTypeId: {
-          name: "Request Type ID",
-          description:
-            "The ID of the request type (e.g., incident, service request)",
+          name: "Request Type",
+          description: "The type of request (e.g., incident, service request)",
           type: "string",
           required: true,
+          suggestValues: async (input) => {
+            const { jiraUrl, email, apiToken } = input.app.config;
+            const serviceDeskId = input.block.config.serviceDeskId;
+
+            if (!serviceDeskId) {
+              return { suggestedValues: [] };
+            }
+
+            const allTypes = await getAllRequestTypes(
+              jiraUrl,
+              email,
+              apiToken,
+              serviceDeskId,
+            );
+
+            let values = allTypes.map((type) => ({
+              label: type.name,
+              value: type.id,
+              description: type.description,
+            }));
+
+            if (input.searchPhrase) {
+              const searchLower = input.searchPhrase.toLowerCase();
+              values = values.filter(
+                (v) =>
+                  v.label.toLowerCase().includes(searchLower) ||
+                  (v.description &&
+                    v.description.toLowerCase().includes(searchLower)),
+              );
+            }
+
+            return { suggestedValues: values.slice(0, 50) };
+          },
         },
         summary: {
           name: "Summary",
@@ -59,8 +188,8 @@ export const createServiceDeskRequest: AppBlock = {
       },
       onEvent: async (input) => {
         const { jiraUrl, email, apiToken } = input.app.config;
+        const { serviceDeskId } = input.block.config;
         const {
-          serviceDeskId,
           requestTypeId,
           summary,
           description,
