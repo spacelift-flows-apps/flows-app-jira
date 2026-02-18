@@ -84,36 +84,33 @@ export const createServiceDeskRequest: AppBlock = {
     "Create a new request via Jira Service Management (uses Service Desk API instead of standard issue API)",
   category: "Service Desk",
 
-  config: {
-    serviceDeskId: {
-      name: "Service Desk",
-      description: "The service desk where the request will be created",
-      type: "string",
-      required: true,
-      suggestValues: async (input) => {
-        const { jiraUrl, email, apiToken } = input.app.config;
-        const allDesks = await getAllServiceDesks(jiraUrl, email, apiToken);
-
-        let values = allDesks.map((desk) => ({
-          label: `${desk.projectName} (${desk.projectKey})`,
-          value: desk.id,
-        }));
-
-        if (input.searchPhrase) {
-          const searchLower = input.searchPhrase.toLowerCase();
-          values = values.filter((v) =>
-            v.label.toLowerCase().includes(searchLower),
-          );
-        }
-
-        return { suggestedValues: values.slice(0, 50) };
-      },
-    },
-  },
-
   inputs: {
     default: {
       config: {
+        serviceDeskId: {
+          name: "Service Desk",
+          description: "The service desk where the request will be created",
+          type: "string",
+          required: true,
+          suggestValues: async (input: any) => {
+            const { jiraUrl, email, apiToken } = input.app.config;
+            const allDesks = await getAllServiceDesks(jiraUrl, email, apiToken);
+
+            let values = allDesks.map((desk) => ({
+              label: `${desk.projectName} (${desk.projectKey})`,
+              value: desk.id,
+            }));
+
+            if (input.searchPhrase) {
+              const searchLower = input.searchPhrase.toLowerCase();
+              values = values.filter((v) =>
+                v.label.toLowerCase().includes(searchLower),
+              );
+            }
+
+            return { suggestedValues: values.slice(0, 50) };
+          },
+        },
         requestTypeId: {
           name: "Request Type",
           description: "The type of request (e.g., incident, service request)",
@@ -121,10 +118,13 @@ export const createServiceDeskRequest: AppBlock = {
           required: true,
           suggestValues: async (input) => {
             const { jiraUrl, email, apiToken } = input.app.config;
-            const serviceDeskId = input.block.config.serviceDeskId;
+            const serviceDeskId = input.staticInputConfig?.serviceDeskId as string | undefined;
 
             if (!serviceDeskId) {
-              return { suggestedValues: [] };
+              return {
+                suggestedValues: [],
+                message: "Configure static value for Service Desk ID to receive suggestions.",
+              };
             }
 
             const allTypes = await getAllRequestTypes(
@@ -188,8 +188,8 @@ export const createServiceDeskRequest: AppBlock = {
       },
       onEvent: async (input) => {
         const { jiraUrl, email, apiToken } = input.app.config;
-        const { serviceDeskId } = input.block.config;
         const {
+          serviceDeskId,
           requestTypeId,
           summary,
           description,
