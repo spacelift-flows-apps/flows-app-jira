@@ -1,5 +1,90 @@
 import { AppBlock, events } from "@slflows/sdk/v1";
+import memoizee from "memoizee";
 import { createJiraClient } from "../../utils/jiraClient";
+
+interface Project {
+  id: string;
+  key: string;
+  name: string;
+}
+
+interface ProjectPagedResponse {
+  values: Project[];
+  startAt: number;
+  maxResults: number;
+  total: number;
+  isLast: boolean;
+}
+
+async function fetchAllProjects(
+  jiraUrl: string,
+  email: string,
+  apiToken: string,
+): Promise<Project[]> {
+  const client = createJiraClient({ jiraUrl, email, apiToken });
+  const allProjects: Project[] = [];
+  let startAt = 0;
+  const maxResults = 50;
+
+  for (let page = 0; page < 10; page++) {
+    const response = await client.get<ProjectPagedResponse>(
+      `/project/search?startAt=${startAt}&maxResults=${maxResults}`,
+    );
+    if (response.values.length === 0) break;
+    allProjects.push(...response.values);
+    if (response.isLast) break;
+    startAt += response.values.length;
+  }
+
+  return allProjects;
+}
+
+const getAllProjects = memoizee(fetchAllProjects, {
+  maxAge: 60000,
+  promise: true,
+});
+
+interface IssueType {
+  id: string;
+  name: string;
+  description: string;
+}
+
+interface IssueTypePagedResponse {
+  issueTypes: IssueType[];
+  startAt: number;
+  maxResults: number;
+  total: number;
+}
+
+async function fetchIssueTypes(
+  jiraUrl: string,
+  email: string,
+  apiToken: string,
+  projectKey: string,
+): Promise<IssueType[]> {
+  const client = createJiraClient({ jiraUrl, email, apiToken });
+  const allTypes: IssueType[] = [];
+  let startAt = 0;
+  const maxResults = 50;
+
+  for (let page = 0; page < 10; page++) {
+    const response = await client.get<IssueTypePagedResponse>(
+      `/issue/createmeta/${projectKey}/issuetypes?startAt=${startAt}&maxResults=${maxResults}`,
+    );
+    if (!response.issueTypes || response.issueTypes.length === 0) break;
+    allTypes.push(...response.issueTypes);
+    if (startAt + response.issueTypes.length >= response.total) break;
+    startAt += response.issueTypes.length;
+  }
+
+  return allTypes;
+}
+
+const getIssueTypes = memoizee(fetchIssueTypes, {
+  maxAge: 60000,
+  promise: true,
+});
 
 export const createIssue: AppBlock = {
   name: "Create Issue",
@@ -15,6 +100,28 @@ export const createIssue: AppBlock = {
             "The key of the project where the issue will be created (e.g., 'PROJ')",
           type: "string",
           required: true,
+          suggestValues: async (input) => {
+            const { jiraUrl, email, apiToken } = input.app.config;
+            const allProjects = await getAllProjects(
+              jiraUrl as string,
+              email as string,
+              apiToken as string,
+            );
+
+            let values = allProjects.map((project) => ({
+              label: `${project.name} (${project.key})`,
+              value: project.key,
+            }));
+
+            if (input.searchPhrase) {
+              const searchLower = input.searchPhrase.toLowerCase();
+              values = values.filter((v) =>
+                v.label.toLowerCase().includes(searchLower),
+              );
+            }
+
+            return { suggestedValues: values.slice(0, 50) };
+          },
         },
         issueTypeName: {
           name: "Issue Type",
@@ -22,6 +129,45 @@ export const createIssue: AppBlock = {
             "The name of the issue type (e.g., 'Bug', 'Task', 'Story', 'Epic')",
           type: "string",
           required: true,
+          suggestValues: async (input) => {
+            const { jiraUrl, email, apiToken } = input.app.config;
+            const projectKey = input.staticInputConfig?.projectKey as
+              | string
+              | undefined;
+
+            if (!projectKey) {
+              return {
+                suggestedValues: [],
+                message:
+                  "Configure static value for Project Key to receive suggestions.",
+              };
+            }
+
+            const allTypes = await getIssueTypes(
+              jiraUrl as string,
+              email as string,
+              apiToken as string,
+              projectKey,
+            );
+
+            let values = allTypes.map((type) => ({
+              label: type.name,
+              value: type.name,
+              description: type.description,
+            }));
+
+            if (input.searchPhrase) {
+              const searchLower = input.searchPhrase.toLowerCase();
+              values = values.filter(
+                (v) =>
+                  v.label.toLowerCase().includes(searchLower) ||
+                  (v.description &&
+                    v.description.toLowerCase().includes(searchLower)),
+              );
+            }
+
+            return { suggestedValues: values.slice(0, 50) };
+          },
         },
         summary: {
           name: "Summary",
