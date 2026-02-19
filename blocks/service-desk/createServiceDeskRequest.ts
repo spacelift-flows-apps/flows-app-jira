@@ -33,10 +33,11 @@ async function fetchAllServiceDesks(
   let start = 0;
   const limit = 50;
 
-  while (true) {
+  for (let page = 0; page < 10; page++) {
     const response = await client.get<PagedResponse<ServiceDesk>>(
       `/servicedesk?start=${start}&limit=${limit}`,
     );
+    if (response.values.length === 0) break;
     allDesks.push(...response.values);
     if (response.isLastPage) break;
     start += response.values.length;
@@ -56,10 +57,11 @@ async function fetchAllRequestTypes(
   let start = 0;
   const limit = 50;
 
-  while (true) {
+  for (let page = 0; page < 10; page++) {
     const response = await client.get<PagedResponse<RequestType>>(
       `/servicedesk/${serviceDeskId}/requesttype?start=${start}&limit=${limit}`,
     );
+    if (response.values.length === 0) break;
     allTypes.push(...response.values);
     if (response.isLastPage) break;
     start += response.values.length;

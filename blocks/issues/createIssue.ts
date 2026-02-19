@@ -26,10 +26,11 @@ async function fetchAllProjects(
   let startAt = 0;
   const maxResults = 50;
 
-  while (true) {
+  for (let page = 0; page < 10; page++) {
     const response = await client.get<ProjectPagedResponse>(
       `/project/search?startAt=${startAt}&maxResults=${maxResults}`,
     );
+    if (response.values.length === 0) break;
     allProjects.push(...response.values);
     if (response.isLast) break;
     startAt += response.values.length;
