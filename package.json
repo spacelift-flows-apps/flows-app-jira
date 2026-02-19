@@ -1,12 +1,12 @@
 {
   "type": "module",
   "dependencies": {
-    "@slflows/sdk": "^0.8.0",
-    "@types/memoizee": "^0.4.12",
+    "@slflows/sdk": "^0.9.0",
     "memoizee": "^0.4.17",
     "typescript": "^5.8.3"
   },
   "devDependencies": {
+    "@types/memoizee": "^0.4.12",
     "@types/node": "^24.0.7",
     "@useflows/flowctl": "^0.1.1",
     "prettier": "^3.6.2",
