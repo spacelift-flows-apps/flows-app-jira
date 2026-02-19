@@ -120,12 +120,15 @@ export const createServiceDeskRequest: AppBlock = {
           required: true,
           suggestValues: async (input) => {
             const { jiraUrl, email, apiToken } = input.app.config;
-            const serviceDeskId = input.staticInputConfig?.serviceDeskId as string | undefined;
+            const serviceDeskId = input.staticInputConfig?.serviceDeskId as
+              | string
+              | undefined;
 
             if (!serviceDeskId) {
               return {
                 suggestedValues: [],
-                message: "Configure static value for Service Desk ID to receive suggestions.",
+                message:
+                  "Configure static value for Service Desk ID to receive suggestions.",
               };
             }
 

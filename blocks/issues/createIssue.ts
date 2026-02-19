@@ -131,12 +131,15 @@ export const createIssue: AppBlock = {
           required: true,
           suggestValues: async (input) => {
             const { jiraUrl, email, apiToken } = input.app.config;
-            const projectKey = input.staticInputConfig?.projectKey as string | undefined;
+            const projectKey = input.staticInputConfig?.projectKey as
+              | string
+              | undefined;
 
             if (!projectKey) {
               return {
                 suggestedValues: [],
-                message: "Configure static value for Project Key to receive suggestions.",
+                message:
+                  "Configure static value for Project Key to receive suggestions.",
               };
             }
 
