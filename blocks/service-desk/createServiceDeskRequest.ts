@@ -92,7 +92,7 @@ export const createServiceDeskRequest: AppBlock = {
           description: "The service desk where the request will be created",
           type: "string",
           required: true,
-          suggestValues: async (input: any) => {
+          suggestValues: async (input) => {
             const { jiraUrl, email, apiToken } = input.app.config;
             const allDesks = await getAllServiceDesks(jiraUrl, email, apiToken);
 
