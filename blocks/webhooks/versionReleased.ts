@@ -4,6 +4,7 @@ export const versionReleased: AppBlock = {
   name: "Version Released",
   description: "Triggered when a Jira version is released via webhook",
   category: "Webhooks",
+  entrypoint: true,
 
   inputs: {},
 
