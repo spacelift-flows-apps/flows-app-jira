@@ -6,6 +6,7 @@ export const issueCreated: AppBlock = {
   name: "Issue Created",
   description: "Triggered when a new Jira issue is created via webhook",
   category: "Webhooks",
+  entrypoint: true,
 
   inputs: {},
 

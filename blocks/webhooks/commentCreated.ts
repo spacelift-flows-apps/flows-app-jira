@@ -5,6 +5,7 @@ export const commentCreated: AppBlock = {
   description:
     "Triggered when a new comment is added to a Jira issue via webhook",
   category: "Webhooks",
+  entrypoint: true,
 
   inputs: {},
 
